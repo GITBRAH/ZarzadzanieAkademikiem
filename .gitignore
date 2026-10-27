@@ -1,0 +1,31 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Node & dependencies
+node_modules/
+dist/
+build/
+.env
+.env.local
+.env.*.local
+*.log
+
+# .NET & C#
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+.local/
+TestResults/
+
+# IDE
+.idea/
+.vscode/
+*.ntvs*
+*.njsproj
+*.sw?
