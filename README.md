@@ -68,7 +68,7 @@ Baza danych tworzy się i seeduje automatycznie przy pierwszym uruchomieniu back
 cd backend/AkaNet.Api
 dotnet run --launch-profile http
 ```
-Backend wystartuje pod adresem: `http://localhost:5000`
+Backend wystartuje pod adresem: `http://localhost:5100`
 
 ### 2. Frontend (React + Vite)
 ```bash

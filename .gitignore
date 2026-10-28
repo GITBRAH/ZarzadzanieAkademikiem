@@ -29,3 +29,7 @@ TestResults/
 *.ntvs*
 *.njsproj
 *.sw?
+
+# Private user notes
+coDodac
+*.local.*

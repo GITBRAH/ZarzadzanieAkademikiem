@@ -3,7 +3,9 @@
 # Ustalenie katalogu głównego projektu
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Dodanie ścieżek Homebrew do PATH (dla Apple Silicon i Intel)
+# Eksport zmiennych środowiskowych wymaganych przez .NET i Homebrew
+export HOME="${HOME:-/Users/jano}"
+export DOTNET_CLI_HOME="${DOTNET_CLI_HOME:-$HOME}"
 export PATH="/opt/homebrew/bin:/opt/homebrew/sbin:/opt/homebrew/opt/postgresql@16/bin:/usr/local/bin:$PATH"
 
 echo "=== Uruchamianie AKAnet System Zarządzania Akademikiem ==="
@@ -15,8 +17,8 @@ if ! pg_isready -q 2>/dev/null; then
   sleep 2
 fi
 
-# 2. Uruchomienie Backendu (.NET Core)
-echo "Uruchamianie Backendu C# (.NET Core Web API na porcie 5000)..."
+# 2. Uruchomienie Backendu (.NET Core na porcie 5100)
+echo "Uruchamianie Backendu C# (.NET Core Web API na porcie 5100)..."
 (
   cd "$ROOT_DIR/backend/AkaNet.Api" && dotnet run --launch-profile http
 ) &
@@ -34,7 +36,7 @@ cleanup() {
 trap cleanup SIGINT SIGTERM EXIT
 
 # Krótkie odczekanie na start backendu
-sleep 2
+sleep 3
 
 # 3. Uruchomienie Frontendu (React Vite na porcie 3000)
 echo "Uruchamianie Frontendu (React Vite na porcie 3000)..."
