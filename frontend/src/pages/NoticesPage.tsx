@@ -12,16 +12,19 @@ export function NoticesPage({ user }: NoticesPageProps) {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(false);
   const [filterCategory, setFilterCategory] = useState('Wszystkie');
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Form State
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [category, setCategory] = useState('Ogólne');
+  // Admin Compose Form State with live preview
+  const [title, setTitle] = useState('Przegląd instalacji przeciwpożarowej');
+  const [content, setContent] = useState(
+    'W czwartek w godzinach 9:00–12:00 odbędzie się planowy przegląd instalacji. Prosimy o umożliwienie dostępu do pokoi.'
+  );
+  const [targetAudience, setTargetAudience] = useState('Wszyscy mieszkańcy · 412 osób');
+  const [category, setCategory] = useState('Techniczne');
   const [priority, setPriority] = useState<'normal' | 'coral'>('normal');
-  const [dayBadge, setDayBadge] = useState('28');
-  const [monthBadge, setMonthBadge] = useState('PAŹ');
   const [submitting, setSubmitting] = useState(false);
+  const [showAdminComposer, setShowAdminComposer] = useState(user.role === 'Admin');
+
+  const isAdmin = user.role === 'Admin';
 
   const loadAnnouncements = async () => {
     try {
@@ -39,24 +42,32 @@ export function NoticesPage({ user }: NoticesPageProps) {
     loadAnnouncements();
   }, []);
 
-  const handleCreateAnnouncement = async (e: React.FormEvent) => {
+  const handleSendAnnouncement = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title || !content) return;
+    if (!title.trim() || !content.trim()) return;
 
     try {
       setSubmitting(true);
+      const now = new Date();
+      const monthNames = ['STY', 'LUT', 'MAR', 'KWI', 'MAJ', 'CZE', 'LIP', 'SIE', 'WRZ', 'PAŹ', 'LIS', 'GRU'];
+      const dayStr = String(now.getDate()).padStart(2, '0');
+      const monthStr = monthNames[now.getMonth()];
+
       await api.createAnnouncement({
         title,
         content,
         category,
         priority,
-        dayBadge,
-        monthBadge
+        dayBadge: dayStr,
+        monthBadge: monthStr,
+        targetAudience
       });
+
+      // Clear or set new draft
       setTitle('');
       setContent('');
-      setIsModalOpen(false);
       await loadAnnouncements();
+      alert('Ogłoszenie zostało pomyślnie opublikowane!');
     } catch (err: any) {
       alert(err.message || 'Błąd dodawania ogłoszenia');
     } finally {
@@ -67,20 +78,14 @@ export function NoticesPage({ user }: NoticesPageProps) {
   const handleDeleteAnnouncement = async (id: number) => {
     if (!window.confirm('Czy na pewno chcesz usunąć to ogłoszenie?')) return;
     try {
-      const res = await fetch(`/api/announcements/${id}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('akanet_token')}`
-        }
-      });
-      if (!res.ok) throw new Error('Błąd usuwania');
+      await api.deleteAnnouncement(id);
       await loadAnnouncements();
     } catch (err: any) {
       alert(err.message || 'Błąd usuwania');
     }
   };
 
-  const categories = ['Wszystkie', 'Wydarzenia', 'Awarie', 'Ogólne'];
+  const categories = ['Wszystkie', 'Techniczne', 'Wydarzenia', 'Organizacyjne', 'Awarie', 'Ogólne'];
   const filtered =
     filterCategory === 'Wszystkie'
       ? announcements
@@ -90,23 +95,129 @@ export function NoticesPage({ user }: NoticesPageProps) {
     <main className="page">
       <div className="booking-intro">
         <div>
-          <p className="eyebrow">KOMUNIKATY I WIADOMOŚCI</p>
-          <h2>Tablica ogłoszeń akademika</h2>
-          <p>Bieżące informacje od administracji, planowane przerwy techniczne i wydarzenia.</p>
+          <p className="eyebrow">{isAdmin ? 'KOMUNIKACJA I DYSTRYBUCJA' : 'TABLICA OGŁOSZEŃ'}</p>
+          <h2>{isAdmin ? 'Ogłoszenia grupowe i komunikaty' : 'Ogłoszenia akademika'}</h2>
+          <p>
+            {isAdmin
+              ? 'Docieraj do właściwych mieszkańców we właściwym czasie z natychmiastowym podglądem.'
+              : 'Bieżące komunikaty od administracji, planowane prace techniczne i wydarzenia.'}
+          </p>
         </div>
-        {user.role === 'Admin' && (
-          <button className="primary-button" onClick={() => setIsModalOpen(true)}>
-            <Icon name="plus" size={17} /> Dodaj ogłoszenie
+
+        {isAdmin && (
+          <button
+            className="secondary-button"
+            onClick={() => setShowAdminComposer(!showAdminComposer)}
+          >
+            <Icon name="megaphone" size={16} />
+            {showAdminComposer ? 'Ukryj kreator wiadomości' : 'Nowe ogłoszenie (Kreator)'}
           </button>
         )}
       </div>
 
-      {/* Filter Tabs */}
+      {/* Admin Announcement Creator with Live Phone Preview (from admin_aka_copy) */}
+      {isAdmin && showAdminComposer && (
+        <section className="compose-card">
+          <form className="compose-form" onSubmit={handleSendAnnouncement}>
+            <div>
+              <p className="eyebrow" style={{ margin: '0 0 4px', color: '#1f4035' }}>
+                KREATOR KOMUNIKATU
+              </p>
+              <h3 style={{ margin: 0, fontSize: '18px' }}>Wyślij nowe ogłoszenie</h3>
+            </div>
+
+            <label>
+              <span>Tytuł ogłoszenia</span>
+              <input
+                placeholder="Wpisz krótki i rzeczowy tytuł..."
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                required
+              />
+            </label>
+
+            <label>
+              <span>Treść wiadomości</span>
+              <textarea
+                placeholder="Wpisz treść komunikatu dla mieszkańców..."
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                required
+              />
+            </label>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <label>
+                <span>Grupa odbiorców</span>
+                <select
+                  value={targetAudience}
+                  onChange={(e) => setTargetAudience(e.target.value)}
+                >
+                  <option value="Wszyscy mieszkańcy · 412 osób">Wszyscy mieszkańcy · 412 osób</option>
+                  <option value="Budynek A">Budynek A</option>
+                  <option value="Budynek B">Budynek B</option>
+                  <option value="Budynek C">Budynek C</option>
+                  <option value="Piętro 1">Piętro 1 (Wszystkie budynki)</option>
+                  <option value="Piętro 2">Piętro 2 (Wszystkie budynki)</option>
+                  <option value="Piętro 3">Piętro 3 (Wszystkie budynki)</option>
+                </select>
+              </label>
+
+              <label>
+                <span>Priorytet</span>
+                <select
+                  value={priority}
+                  onChange={(e) => setPriority(e.target.value as any)}
+                >
+                  <option value="normal">Standardowy</option>
+                  <option value="coral">Pilny / Ważny alert</option>
+                </select>
+              </label>
+            </div>
+
+            <button
+              type="submit"
+              className="primary-button"
+              disabled={submitting}
+              style={{ alignSelf: 'flex-start', marginTop: '6px' }}
+            >
+              <Icon name="megaphone" size={17} />
+              {submitting ? 'Wysyłanie...' : 'Wyślij ogłoszenie'}
+            </button>
+          </form>
+
+          {/* Live Phone Mockup Preview */}
+          <div className="message-preview">
+            <span className="message-preview-title">PODGLĄD WIADOMOŚCI (SMARTFON)</span>
+            <div className="phone-message">
+              <div className="phone-message-header">
+                <div className="phone-brand">
+                  <div className="phone-brand-mark">
+                    <Icon name="building" size={15} />
+                  </div>
+                  <strong>AKAnet Olimp</strong>
+                </div>
+                <span className="phone-time">TERAZ</span>
+              </div>
+              <h4>{title || 'Tytuł Twojego ogłoszenia'}</h4>
+              <p>
+                {content ||
+                  'Tutaj pojawi się treść wiadomości, którą zobaczą mieszkańcy w aplikacji mobilnej i na tablicy ogłoszeń...'}
+              </p>
+              <div style={{ marginTop: '12px', fontSize: '9px', color: '#94a3b8' }}>
+                Odbiorcy: <b>{targetAudience}</b>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Announcements Filter Tabs */}
       <div className="filter-tabs">
         {categories.map((cat) => (
           <button
             key={cat}
-            className={`tab-btn ${filterCategory === cat ? 'active' : ''}`}
+            className={`tab-btn ${filterCategory.toLowerCase() === cat.toLowerCase() ? 'active' : ''}`}
             onClick={() => setFilterCategory(cat)}
           >
             {cat}
@@ -114,135 +225,49 @@ export function NoticesPage({ user }: NoticesPageProps) {
         ))}
       </div>
 
-      <section className="panel" style={{ marginTop: '16px' }}>
-        {loading && announcements.length === 0 ? (
-          <p style={{ padding: '20px', textAlign: 'center', color: '#7a8b9f', fontSize: '13px' }}>
-            Ładowanie ogłoszeń...
-          </p>
+      {/* Announcements List */}
+      <section className="panel">
+        {loading ? (
+          <p style={{ color: '#8291a2', fontSize: '13px', padding: '20px 0' }}>Ładowanie ogłoszeń...</p>
         ) : filtered.length === 0 ? (
-          <p style={{ padding: '30px', textAlign: 'center', color: '#7a8b9f', fontSize: '13px' }}>
-            Brak ogłoszeń w wybranej kategorii.
-          </p>
+          <p style={{ color: '#8291a2', fontSize: '13px', padding: '20px 0' }}>Brak ogłoszeń w tej kategorii.</p>
         ) : (
           filtered.map((item) => (
-            <article className="notice" key={item.id} style={{ alignItems: 'flex-start' }}>
+            <article className="notice" key={item.id}>
               <span className={`notice-date ${item.priority === 'coral' ? 'coral' : ''}`}>
                 <b>{item.dayBadge}</b>
                 {item.monthBadge}
               </span>
               <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <strong style={{ fontSize: '13px' }}>{item.title}</strong>
-                  <span className={`tag ${item.priority === 'coral' ? 'tag-danger' : 'tag-info'}`}>
-                    {item.category}
-                  </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                  <span className="category-chip blue">{item.category}</span>
+                  {item.priority === 'coral' && (
+                    <span className="tag tag-danger">Ważny komunikat</span>
+                  )}
+                  {item.targetAudience && (
+                    <span style={{ fontSize: '9px', color: '#64748b' }}>
+                      · Odbiorcy: {item.targetAudience}
+                    </span>
+                  )}
                 </div>
-                <p style={{ fontSize: '11px', lineHeight: 1.5, marginTop: '4px' }}>{item.content}</p>
-                <small style={{ color: '#94a3b8', fontSize: '9px', marginTop: '6px', display: 'block' }}>
-                  Opublikowano: {new Date(item.createdAt).toLocaleDateString('pl-PL')}
-                </small>
+                <strong>{item.title}</strong>
+                <p style={{ marginTop: '6px' }}>{item.content}</p>
               </div>
 
-              {user.role === 'Admin' && (
+              {isAdmin && (
                 <button
                   onClick={() => handleDeleteAnnouncement(item.id)}
-                  style={{
-                    border: 'none',
-                    background: 'none',
-                    color: '#ef4444',
-                    fontSize: '11px',
-                    cursor: 'pointer',
-                    padding: '4px'
-                  }}
+                  className="icon-button"
+                  style={{ width: '32px', height: '32px', color: '#dc2626' }}
                   title="Usuń ogłoszenie"
                 >
-                  <Icon name="x" size={16} />
+                  <Icon name="close" size={15} />
                 </button>
               )}
             </article>
           ))
         )}
       </section>
-
-      {/* Modal Dodaj Ogłoszenie */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Dodaj nowe ogłoszenie">
-        <form onSubmit={handleCreateAnnouncement} className="modal-form">
-          <div className="form-group">
-            <label>Tytuł ogłoszenia</label>
-            <input
-              type="text"
-              placeholder="np. Przerwa w dostawie ciepłej wody"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              required
-            />
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-            <div className="form-group">
-              <label>Kategoria</label>
-              <select value={category} onChange={(e) => setCategory(e.target.value)}>
-                <option value="Ogólne">Ogólne</option>
-                <option value="Awarie">Awarie i przerwy</option>
-                <option value="Wydarzenia">Wydarzenia</option>
-              </select>
-            </div>
-            <div className="form-group">
-              <label>Waga / Kolor</label>
-              <select
-                value={priority}
-                onChange={(e) => setPriority(e.target.value as 'normal' | 'coral')}
-              >
-                <option value="normal">Standardowy (niebieski)</option>
-                <option value="coral">Ważny / Pilny (czerwony)</option>
-              </select>
-            </div>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-            <div className="form-group">
-              <label>Dzień na plakietce</label>
-              <input
-                type="text"
-                placeholder="np. 28"
-                value={dayBadge}
-                onChange={(e) => setDayBadge(e.target.value)}
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label>Miesiąc na plakietce</label>
-              <input
-                type="text"
-                placeholder="np. PAŹ"
-                value={monthBadge}
-                onChange={(e) => setMonthBadge(e.target.value)}
-                required
-              />
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label>Treść komunikatu</label>
-            <textarea
-              rows={4}
-              placeholder="Wpisz treść komunikatu dla mieszkańców..."
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              required
-            />
-          </div>
-
-          <div className="form-actions">
-            <button type="button" className="secondary-button" onClick={() => setIsModalOpen(false)}>
-              Anuluj
-            </button>
-            <button type="submit" className="primary-button" disabled={submitting}>
-              {submitting ? 'Dodawanie...' : 'Opublikuj ogłoszenie'}
-            </button>
-          </div>
-        </form>
-      </Modal>
     </main>
   );
 }

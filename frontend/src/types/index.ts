@@ -31,6 +31,7 @@ export interface FacilityStatus {
 
 export interface MaintenanceTicket {
   id: number;
+  ticketNumber?: string;
   title: string;
   category: string;
   description: string;
@@ -63,6 +64,7 @@ export interface Announcement {
   priority: 'normal' | 'coral';
   dayBadge: string;
   monthBadge: string;
+  targetAudience?: string;
   createdAt: string;
 }
 
@@ -82,5 +84,29 @@ export interface RoomDetails {
     fullName: string;
     email: string;
     phoneNumber?: string;
+  }[];
+}
+
+export interface ResidentRecord {
+  id: number;
+  fullName: string;
+  indexNumber: string;
+  roomNumber: string;
+  floor: string;
+  building: string;
+  status: string;
+}
+
+export interface RoomRecord {
+  number: string;
+  floor: string;
+  building: string;
+  capacity: string;
+  capacityNum: number;
+  occupancyNum: number;
+  status: 'Zajęty' | 'Wolne miejsca' | 'Pusty';
+  residents: {
+    name: string;
+    indexNumber: string;
   }[];
 }

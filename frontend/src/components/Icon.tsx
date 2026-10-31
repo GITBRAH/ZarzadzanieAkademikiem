@@ -20,7 +20,19 @@ export type IconName =
   | 'alert'
   | 'refresh'
   | 'logout'
-  | 'x';
+  | 'x'
+  | 'search'
+  | 'users'
+  | 'megaphone'
+  | 'grid'
+  | 'moon'
+  | 'sun'
+  | 'lock'
+  | 'unlock'
+  | 'dryer'
+  | 'washer'
+  | 'download'
+  | 'close';
 
 export function Icon({ name, size = 20, className }: { name: IconName; size?: number; className?: string }) {
   const paths: Record<IconName, ReactNode> = {
@@ -36,6 +48,22 @@ export function Icon({ name, size = 20, className }: { name: IconName; size?: nu
         <path d="M4 8h16M8 5.5h.01M12 5.5h4" />
         <circle cx="12" cy="14.5" r="4" />
         <path d="M9.2 14.4c1.2-1 2.3.8 4 .1.8-.3 1.3-.1 1.7.2" />
+      </>
+    ),
+    washer: (
+      <>
+        <rect x="4" y="2.5" width="16" height="19" rx="3" />
+        <path d="M4 7.5h16M8 5h.01M11 5h.01" />
+        <circle cx="12" cy="14.5" r="5" />
+        <path d="M9 14c2-2 4 2 6 0" />
+      </>
+    ),
+    dryer: (
+      <>
+        <rect x="4" y="2.5" width="16" height="19" rx="3" />
+        <path d="M4 7.5h16M8 5h.01" />
+        <circle cx="12" cy="14.5" r="5" />
+        <path d="M10 12.5c3 0 1 4 4 4" />
       </>
     ),
     court: (
@@ -77,6 +105,12 @@ export function Icon({ name, size = 20, className }: { name: IconName; size?: nu
         <path d="M4 21a8 8 0 0 1 16 0" />
       </>
     ),
+    users: (
+      <>
+        <circle cx="9" cy="8" r="4" />
+        <path d="M2 21a7 7 0 0 1 14 0m1-16a4 4 0 0 1 0 7m2 3a6 6 0 0 1 3 6" />
+      </>
+    ),
     building: (
       <>
         <path d="M3 21h18M5 21V5l7-3 7 3v16" />
@@ -97,7 +131,7 @@ export function Icon({ name, size = 20, className }: { name: IconName; size?: nu
       </>
     ),
     check: <path d="m5 12 4 4L19 6" />,
-    arrow: <path d="m15 18-6-6 6-6" />,
+    arrow: <path d="M5 12h14m-5-5 5 5-5 5" />,
     plus: <path d="M12 5v14M5 12h14" />,
     alert: (
       <>
@@ -126,6 +160,53 @@ export function Icon({ name, size = 20, className }: { name: IconName; size?: nu
         <line x1="18" y1="6" x2="6" y2="18" />
         <line x1="6" y1="6" x2="18" y2="18" />
       </>
+    ),
+    close: <path d="M6 6l12 12M18 6 6 18" />,
+    search: (
+      <>
+        <circle cx="11" cy="11" r="7" />
+        <path d="m20 20-4-4" />
+      </>
+    ),
+    megaphone: (
+      <>
+        <path d="m4 13-1-1v-2l1-1 13-5v14L4 13Z" />
+        <path d="M8 14v5a2 2 0 0 0 2 2h1v-7m8-6a4 4 0 0 1 0 6" />
+      </>
+    ),
+    grid: (
+      <>
+        <rect x="3" y="3" width="7" height="7" rx="2" />
+        <rect x="14" y="3" width="7" height="7" rx="2" />
+        <rect x="3" y="14" width="7" height="7" rx="2" />
+        <rect x="14" y="14" width="7" height="7" rx="2" />
+      </>
+    ),
+    moon: <path d="M20 15.2A8.5 8.5 0 0 1 8.8 4 8.5 8.5 0 1 0 20 15.2Z" />,
+    sun: (
+      <>
+        <circle cx="12" cy="12" r="4" />
+        <path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41m14.14-14.14-1.41 1.41" />
+      </>
+    ),
+    lock: (
+      <>
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+      </>
+    ),
+    unlock: (
+      <>
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+        <path d="M7 11V7a5 5 0 0 1 9.9-1" />
+      </>
+    ),
+    download: (
+      <>
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+        <polyline points="7 10 12 15 17 10" />
+        <line x1="12" y1="15" x2="12" y2="3" />
+      </>
     )
   };
 
@@ -142,7 +223,7 @@ export function Icon({ name, size = 20, className }: { name: IconName; size?: nu
       className={className}
       aria-hidden="true"
     >
-      {paths[name]}
+      {paths[name] || paths.home}
     </svg>
   );
 }

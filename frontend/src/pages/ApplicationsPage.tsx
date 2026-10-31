@@ -12,6 +12,7 @@ export function ApplicationsPage({ user }: ApplicationsPageProps) {
   const [applications, setApplications] = useState<ApplicationRequest[]>([]);
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'accepted' | 'rejected'>('all');
 
   // Form
   const [type, setType] = useState('Zmiana pokoju');
@@ -23,6 +24,8 @@ export function ApplicationsPage({ user }: ApplicationsPageProps) {
   const [selectedApp, setSelectedApp] = useState<ApplicationRequest | null>(null);
   const [adminStatus, setAdminStatus] = useState('Zaakceptowane');
   const [adminComment, setAdminComment] = useState('');
+
+  const isAdmin = user.role === 'Admin';
 
   const loadApplications = async () => {
     try {
@@ -54,6 +57,7 @@ export function ApplicationsPage({ user }: ApplicationsPageProps) {
       setJustification('');
       setIsModalOpen(false);
       await loadApplications();
+      alert('Wniosek został pomyślnie złożony!');
     } catch (err: any) {
       alert(err.message || 'Błąd przy składaniu wniosku');
     } finally {
@@ -66,21 +70,25 @@ export function ApplicationsPage({ user }: ApplicationsPageProps) {
     if (!selectedApp) return;
 
     try {
-      const res = await fetch(`/api/applications/${selectedApp.id}/status`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('akanet_token')}`
-        },
-        body: JSON.stringify({ status: adminStatus, adminComment })
-      });
-      if (!res.ok) throw new Error('Błąd aktualizacji statusu wniosku');
+      await api.updateApplicationStatus(selectedApp.id, adminStatus, adminComment);
       setSelectedApp(null);
       await loadApplications();
+      alert('Status wniosku został zaktualizowany.');
     } catch (err: any) {
       alert(err.message || 'Nie udało się zaktualizować wniosku');
     }
   };
+
+  const pendingCount = applications.filter((a) => a.status === 'Oczekujące').length;
+  const acceptedCount = applications.filter((a) => a.status === 'Zaakceptowane').length;
+  const rejectedCount = applications.filter((a) => a.status === 'Odrzucone').length;
+
+  const filteredApps = applications.filter((a) => {
+    if (statusFilter === 'pending') return a.status === 'Oczekujące';
+    if (statusFilter === 'accepted') return a.status === 'Zaakceptowane';
+    if (statusFilter === 'rejected') return a.status === 'Odrzucone';
+    return true;
+  });
 
   const getStatusClass = (status: string) => {
     switch (status) {
@@ -97,102 +105,132 @@ export function ApplicationsPage({ user }: ApplicationsPageProps) {
     <main className="page">
       <div className="booking-intro">
         <div>
-          <p className="eyebrow">SPRAWY FORMALNE</p>
-          <h2>Podania i wnioski mieszkańców</h2>
+          <p className="eyebrow">{isAdmin ? 'OBIEG DOKUMENTÓW' : 'SPRAWY FORMALNE'}</p>
+          <h2>{isAdmin ? 'Podania i wnioski mieszkańców' : 'Podania i wnioski online'}</h2>
           <p>
-            Elektroniczny obieg podań – wnioskuj o zmianę pokoju, zgłaszaj gości lub procedurę
-            wymeldowania.
+            {isAdmin
+              ? 'Weryfikacja elektronicznych wniosków o zameldowanie gości, wymianę sprzętu i zmiany pokoi.'
+              : 'Wygodny obieg dokumentów bez konieczności wizyty w biurze administracji.'}
           </p>
         </div>
+
         <button className="primary-button" onClick={() => setIsModalOpen(true)}>
           <Icon name="plus" size={17} /> Złóż nowy wniosek
         </button>
       </div>
 
-      <section className="panel" style={{ padding: '0', overflow: 'hidden' }}>
-        <div
-          style={{
-            padding: '18px 24px',
-            borderBottom: '1px solid #edf1f5',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center'
-          }}
+      {/* Stats Cards */}
+      <section className="admin-stats-grid">
+        <article className="stat-card">
+          <small>WSZYSTKIE WNIOSKI</small>
+          <strong>{applications.length}</strong>
+          <span>W bieżącym semestrze</span>
+        </article>
+
+        <article className="stat-card accent">
+          <small>DO ROZPATRZENIA</small>
+          <strong>{pendingCount}</strong>
+          <span>Oczekują na decyzję kierownika</span>
+        </article>
+
+        <article className="stat-card">
+          <small>ZAAKCEPTOWANE</small>
+          <strong>{acceptedCount}</strong>
+          <span>Wydano zgodę</span>
+        </article>
+
+        <article className="stat-card">
+          <small>ODRZUCONE</small>
+          <strong>{rejectedCount}</strong>
+          <span>Wymagają uzupełnienia</span>
+        </article>
+      </section>
+
+      {/* Filter Tabs */}
+      <div className="filter-tabs">
+        <button
+          className={`tab-btn ${statusFilter === 'all' ? 'active' : ''}`}
+          onClick={() => setStatusFilter('all')}
         >
-          <h3 style={{ margin: 0, fontSize: '15px' }}>Złożone dokumenty i wnioski</h3>
-          <button
-            onClick={loadApplications}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              background: 'none',
-              border: 'none',
-              color: '#126dad',
-              cursor: 'pointer',
-              fontSize: '11px',
-              fontWeight: 600
-            }}
-          >
-            <Icon name="refresh" size={14} /> Odśwież
-          </button>
+          Wszystkie ({applications.length})
+        </button>
+        <button
+          className={`tab-btn ${statusFilter === 'pending' ? 'active' : ''}`}
+          onClick={() => setStatusFilter('pending')}
+        >
+          Oczekujące ({pendingCount})
+        </button>
+        <button
+          className={`tab-btn ${statusFilter === 'accepted' ? 'active' : ''}`}
+          onClick={() => setStatusFilter('accepted')}
+        >
+          Zaakceptowane ({acceptedCount})
+        </button>
+        <button
+          className={`tab-btn ${statusFilter === 'rejected' ? 'active' : ''}`}
+          onClick={() => setStatusFilter('rejected')}
+        >
+          Odrzucone ({rejectedCount})
+        </button>
+      </div>
+
+      {/* Table */}
+      <section className="panel">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">REJESTR PODAŃ</p>
+            <h3>Złożone wnioski i decyzje</h3>
+          </div>
         </div>
 
-        {loading && applications.length === 0 ? (
-          <p style={{ padding: '30px', textAlign: 'center', color: '#7a8b9f', fontSize: '12px' }}>
-            Ładowanie wniosków...
-          </p>
-        ) : applications.length === 0 ? (
-          <div style={{ padding: '40px 20px', textAlign: 'center' }}>
-            <p style={{ color: '#7a8b9f', fontSize: '13px' }}>Brak złożonych podań.</p>
-            <button
-              className="primary-button"
-              style={{ margin: '14px auto 0' }}
-              onClick={() => setIsModalOpen(true)}
-            >
-              Złóż pierwsze podanie
-            </button>
+        {loading ? (
+          <p style={{ color: '#8291a2', fontSize: '13px', padding: '20px 0' }}>Ładowanie podań...</p>
+        ) : filteredApps.length === 0 ? (
+          <div style={{ padding: '30px 0', textAlign: 'center', color: '#7a8b9f', fontSize: '12px' }}>
+            <p>Brak podań w wybranej kategorii.</p>
           </div>
         ) : (
           <div className="table-responsive">
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>STATUS</th>
                   <th>TYP WNIOSKU</th>
                   <th>TYTUŁ I UZASADNIENIE</th>
                   <th>WNIOSKODAWCA</th>
+                  <th>STATUS</th>
                   <th>DATA ZŁOŻENIA</th>
-                  {user.role === 'Admin' && <th>DECYZJA</th>}
+                  {isAdmin && <th>DECYZJA ZARZĄDCY</th>}
                 </tr>
               </thead>
               <tbody>
-                {applications.map((app) => (
+                {filteredApps.map((app) => (
                   <tr key={app.id}>
-                    <td>
-                      <span className={`tag ${getStatusClass(app.status)}`}>{app.status}</span>
-                    </td>
                     <td>
                       <span className="category-chip blue">{app.type}</span>
                     </td>
-                    <td style={{ maxWidth: '360px' }}>
-                      <strong style={{ display: 'block', fontSize: '12px', color: '#14243a' }}>
-                        {app.title}
-                      </strong>
-                      <p style={{ margin: '3px 0 0', fontSize: '11px', color: '#64748b', lineHeight: 1.35 }}>
+                    <td>
+                      <strong style={{ fontSize: '12px' }}>{app.title}</strong>
+                      <p style={{ margin: '4px 0 0', fontSize: '10px', color: '#64748b', maxWidth: '340px' }}>
                         {app.justification}
                       </p>
                       {app.adminComment && (
                         <div className="admin-response-box">
-                          <strong>Komentarz administracji:</strong> {app.adminComment}
+                          <strong>Uzasadnienie administracji:</strong> {app.adminComment}
                         </div>
                       )}
                     </td>
-                    <td style={{ fontSize: '12px', fontWeight: 500 }}>{app.applicant}</td>
-                    <td style={{ fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>
-                      {new Date(app.createdAt).toLocaleDateString('pl-PL')}
+                    <td>
+                      <span style={{ fontSize: '11px', fontWeight: 600 }}>{app.applicant}</span>
                     </td>
-                    {user.role === 'Admin' && (
+                    <td>
+                      <span className={`tag ${getStatusClass(app.status)}`}>{app.status}</span>
+                    </td>
+                    <td>
+                      <span style={{ fontSize: '10px', color: '#64748b' }}>
+                        {app.createdAt ? new Date(app.createdAt).toLocaleDateString('pl-PL') : 'Dzisiaj'}
+                      </span>
+                    </td>
+                    {isAdmin && (
                       <td>
                         <button
                           className="action-btn-small"
@@ -202,7 +240,7 @@ export function ApplicationsPage({ user }: ApplicationsPageProps) {
                             setAdminComment(app.adminComment || '');
                           }}
                         >
-                          Rozpatrz
+                          Rozpatrz wniosek
                         </button>
                       </td>
                     )}
@@ -214,18 +252,18 @@ export function ApplicationsPage({ user }: ApplicationsPageProps) {
         )}
       </section>
 
-      {/* Modal Nowe Podanie */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Złóż nowy wniosek">
+      {/* Modal Złóż wniosek */}
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Złóż nowy wniosek do administracji">
         <form onSubmit={handleSubmitApplication} className="modal-form">
           <div className="form-group">
-            <label>Rodzaj wniosku</label>
+            <label>Rodzaj podania</label>
             <select value={type} onChange={(e) => setType(e.target.value)}>
-              <option value="Zmiana pokoju">Zmiana pokoju / przeniesienie</option>
-              <option value="Zgłoszenie gościa">Zgłoszenie noclegu gościa</option>
-              <option value="Przedłużenie pobytu">Przedłużenie zakwaterowania</option>
-              <option value="Wymiana wyposażenia">Wymiana wyposażenia / mebli</option>
-              <option value="Wymeldowanie">Wymeldowanie i rozliczenie kaucji</option>
-              <option value="Inne">Inne podanie do kierownictwa</option>
+              <option value="Zmiana pokoju">Wniosek o zmianę pokoju</option>
+              <option value="Goście">Zgłoszenie noclegu gościa</option>
+              <option value="Przedłużenie">Przedłużenie okresu zakwaterowania</option>
+              <option value="Inwentarz">Wymiana / pobranie wyposażenia</option>
+              <option value="Wymeldowanie">Zgłoszenie wcześniejszego wymeldowania</option>
+              <option value="Inne">Inna sprawa formalna</option>
             </select>
           </div>
 
@@ -233,7 +271,7 @@ export function ApplicationsPage({ user }: ApplicationsPageProps) {
             <label>Tytuł wniosku</label>
             <input
               type="text"
-              placeholder="np. Nocleg brata w weekend 2-3 listopada"
+              placeholder="np. Zgłoszenie noclegu gościa na weekend"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
@@ -241,10 +279,10 @@ export function ApplicationsPage({ user }: ApplicationsPageProps) {
           </div>
 
           <div className="form-group">
-            <label>Szczegółowe uzasadnienie</label>
+            <label>Uzasadnienie wniosku</label>
             <textarea
               rows={4}
-              placeholder="Przedstaw powód wniosku oraz istotne informacje (np. dane gościa, zgoda współlokatora)..."
+              placeholder="Podaj szczegóły (daty pobytu gościa, powód zmiany pokoju itp.)..."
               value={justification}
               onChange={(e) => setJustification(e.target.value)}
               required
@@ -252,52 +290,73 @@ export function ApplicationsPage({ user }: ApplicationsPageProps) {
           </div>
 
           <div className="form-actions">
-            <button type="button" className="secondary-button" onClick={() => setIsModalOpen(false)}>
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={() => setIsModalOpen(false)}
+              disabled={submitting}
+            >
               Anuluj
             </button>
             <button type="submit" className="primary-button" disabled={submitting}>
-              {submitting ? 'Składanie...' : 'Złóż wniosek'}
+              {submitting ? 'Przesyłanie...' : 'Złóż wniosek'}
             </button>
           </div>
         </form>
       </Modal>
 
       {/* Modal Decyzja Admina */}
-      <Modal
-        isOpen={!!selectedApp}
-        onClose={() => setSelectedApp(null)}
-        title={`Decyzja administracyjna: ${selectedApp?.title}`}
-      >
-        <form onSubmit={handleUpdateStatus} className="modal-form">
-          <div className="form-group">
-            <label>Decyzja kierownika akademika</label>
-            <select value={adminStatus} onChange={(e) => setAdminStatus(e.target.value)}>
-              <option value="Zaakceptowane">Zaakceptuj wniosek</option>
-              <option value="Odrzucone">Odrzuć wniosek</option>
-              <option value="Oczekujące">Wstrzymaj do wyjaśnienia</option>
-            </select>
-          </div>
+      {selectedApp && (
+        <Modal
+          isOpen={!!selectedApp}
+          onClose={() => setSelectedApp(null)}
+          title={`Rozpatrywanie wniosku: ${selectedApp.title}`}
+        >
+          <form onSubmit={handleUpdateStatus} className="modal-form">
+            <div>
+              <strong style={{ fontSize: '13px' }}>{selectedApp.title}</strong>
+              <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#64748b' }}>
+                Wnioskodawca: {selectedApp.applicant} · Typ: {selectedApp.type}
+              </p>
+              <div style={{ marginTop: '8px', padding: '10px', background: '#f8fafc', borderRadius: '8px', fontSize: '11px', color: '#334155' }}>
+                <strong>Treść:</strong> {selectedApp.justification}
+              </div>
+            </div>
 
-          <div className="form-group">
-            <label>Uzasadnienie decyzji / Informacja dla mieszkańca</label>
-            <textarea
-              rows={3}
-              placeholder="np. Przepustka wydana w portierni / Brak wolnych pokoi w wybranym segmencie."
-              value={adminComment}
-              onChange={(e) => setAdminComment(e.target.value)}
-            />
-          </div>
+            <div className="form-group">
+              <label>Decyzja kierownika</label>
+              <select value={adminStatus} onChange={(e) => setAdminStatus(e.target.value)}>
+                <option value="Zaakceptowane">Zaakceptowane (Zgoda udzielona)</option>
+                <option value="Odrzucone">Odrzucone (Brak możliwości realizacji)</option>
+                <option value="Oczekujące">Wstrzymane (Do ponownego rozpatrzenia)</option>
+              </select>
+            </div>
 
-          <div className="form-actions">
-            <button type="button" className="secondary-button" onClick={() => setSelectedApp(null)}>
-              Zamknij
-            </button>
-            <button type="submit" className="primary-button">
-              Zatwierdź decyzję
-            </button>
-          </div>
-        </form>
-      </Modal>
+            <div className="form-group">
+              <label>Uzasadnienie decyzji dla studenta</label>
+              <textarea
+                rows={3}
+                placeholder="np. Wyrażam zgodę na nocleg w dniach 2-4 listopada pod warunkiem zgłoszenia w recepcji."
+                value={adminComment}
+                onChange={(e) => setAdminComment(e.target.value)}
+              />
+            </div>
+
+            <div className="form-actions">
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => setSelectedApp(null)}
+              >
+                Anuluj
+              </button>
+              <button type="submit" className="primary-button">
+                Zapisz decyzję
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </main>
   );
 }

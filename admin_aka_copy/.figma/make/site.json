@@ -1,0 +1,10 @@
+{
+  "description": "Streamline dormitory management for students and administrators with features for booking laundry facilities, reporting issues, and sending group announcements.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}

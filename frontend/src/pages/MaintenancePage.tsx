@@ -12,6 +12,7 @@ export function MaintenancePage({ user }: MaintenancePageProps) {
   const [tickets, setTickets] = useState<MaintenanceTicket[]>([]);
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'new' | 'progress' | 'resolved'>('all');
 
   // Form State
   const [title, setTitle] = useState('');
@@ -24,6 +25,8 @@ export function MaintenancePage({ user }: MaintenancePageProps) {
   const [selectedTicket, setSelectedTicket] = useState<MaintenanceTicket | null>(null);
   const [adminStatus, setAdminStatus] = useState('W trakcie');
   const [adminResponse, setAdminResponse] = useState('');
+
+  const isAdmin = user.role === 'Admin';
 
   const loadTickets = async () => {
     try {
@@ -55,6 +58,7 @@ export function MaintenancePage({ user }: MaintenancePageProps) {
       setDescription('');
       setIsModalOpen(false);
       await loadTickets();
+      alert('Usterka została pomyślnie zgłoszona!');
     } catch (err: any) {
       alert(err.message || 'Błąd przy zgłaszaniu usterki');
     } finally {
@@ -75,9 +79,42 @@ export function MaintenancePage({ user }: MaintenancePageProps) {
     }
   };
 
-  const totalCount = tickets.length;
+  // Export report to CSV
+  const handleExportReport = () => {
+    const headers = ['ID', 'Nr sprawy', 'Pokój', 'Zgłaszający', 'Tytuł', 'Kategoria', 'Priorytet', 'Status', 'Data', 'Odpowiedź'];
+    const rows = tickets.map((t) => [
+      t.id,
+      t.ticketNumber || `#0${t.id}`,
+      t.roomNumber,
+      `"${t.author}"`,
+      `"${t.title.replace(/"/g, '""')}"`,
+      t.category,
+      t.priority,
+      t.status,
+      t.createdAt ? new Date(t.createdAt).toLocaleDateString('pl-PL') : '',
+      `"${(t.adminResponse || '').replace(/"/g, '""')}"`
+    ]);
+
+    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(';'), ...rows.map((r) => r.join(';'))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `Raport_Usterek_AKAnet_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const openCount = tickets.filter((t) => t.status === 'Nowe').length;
   const inProgressCount = tickets.filter((t) => t.status === 'W trakcie').length;
   const resolvedCount = tickets.filter((t) => t.status === 'Rozwiązane').length;
+
+  const filteredTickets = tickets.filter((t) => {
+    if (statusFilter === 'new') return t.status === 'Nowe';
+    if (statusFilter === 'progress') return t.status === 'W trakcie';
+    if (statusFilter === 'resolved') return t.status === 'Rozwiązane';
+    return true;
+  });
 
   const getStatusClass = (status: string) => {
     switch (status) {
@@ -107,96 +144,135 @@ export function MaintenancePage({ user }: MaintenancePageProps) {
     <main className="page">
       <div className="booking-intro">
         <div>
-          <p className="eyebrow">ZGŁASZANIE AWARII</p>
-          <h2>Usterki i prace naprawcze</h2>
-          <p>Zgłoś problem techniczny w swoim pokoju lub częściach wspólnych akademika.</p>
+          <p className="eyebrow">{isAdmin ? 'CENTRUM NAPRAW I TECHNIKI' : 'ZGŁASZANIE AWARII'}</p>
+          <h2>{isAdmin ? 'Usterki i prace naprawcze' : 'Usterki w pokoju i akademiku'}</h2>
+          <p>
+            {isAdmin
+              ? 'Priorytetyzuj zgłoszenia, przydzielaj je technikom i informuj mieszkańców o postępach.'
+              : 'Zgłoś problem techniczny do konserwatora akademika. Odpowiadamy zwykle w ciągu 1-2 godzin.'}
+          </p>
         </div>
-        <button className="primary-button" onClick={() => setIsModalOpen(true)}>
-          <Icon name="plus" size={17} /> Zgłoś nową usterkę
-        </button>
+
+        <div style={{ display: 'flex', gap: '10px' }}>
+          {isAdmin && (
+            <button className="secondary-button" onClick={handleExportReport} title="Pobierz raport w formacie CSV">
+              <Icon name="download" size={16} /> Eksportuj raport
+            </button>
+          )}
+
+          <button className="primary-button" onClick={() => setIsModalOpen(true)}>
+            <Icon name="plus" size={17} /> Zgłoś nową usterkę
+          </button>
+        </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="action-grid" style={{ marginBottom: '24px' }}>
-        <div className="stat-card">
-          <small>WSZYSTKIE ZGŁOSZENIA</small>
-          <strong>{totalCount}</strong>
-          <span>Rejestr w AKAnet</span>
-        </div>
-        <div className="stat-card">
-          <small>W TRAKCIE REALIZACJI</small>
-          <strong style={{ color: '#d97706' }}>{inProgressCount}</strong>
-          <span>Konserwator powiadomiony</span>
-        </div>
-        <div className="stat-card">
+      <section className="admin-stats-grid">
+        <article className="stat-card">
+          <small>WSZYSTKIE SPRAWY</small>
+          <strong>{tickets.length}</strong>
+          <span>W ewidencji systemu</span>
+        </article>
+
+        <article className="stat-card accent">
+          <small>NOWE ZGŁOSZENIA</small>
+          <strong>{openCount}</strong>
+          <span>Oczekują na weryfikację</span>
+        </article>
+
+        <article className="stat-card">
+          <small>W REALIZACJI</small>
+          <strong>{inProgressCount}</strong>
+          <span>Konserwator w toku prac</span>
+        </article>
+
+        <article className="stat-card">
           <small>ROZWIĄZANE</small>
-          <strong style={{ color: '#16a34a' }}>{resolvedCount}</strong>
-          <span>Pomyślnie naprawione</span>
-        </div>
-        <div className="stat-card">
-          <small>ŚREDNI CZAS REAKCJI</small>
-          <strong style={{ color: '#2563eb' }}>~1.5 h</strong>
-          <span>Dział techniczny</span>
-        </div>
+          <strong>{resolvedCount}</strong>
+          <span>Zakończone pomyślnie</span>
+        </article>
+      </section>
+
+      {/* Filter Tabs */}
+      <div className="filter-tabs">
+        <button
+          className={`tab-btn ${statusFilter === 'all' ? 'active' : ''}`}
+          onClick={() => setStatusFilter('all')}
+        >
+          Wszystkie ({tickets.length})
+        </button>
+        <button
+          className={`tab-btn ${statusFilter === 'new' ? 'active' : ''}`}
+          onClick={() => setStatusFilter('new')}
+        >
+          Otwarte / Nowe ({openCount})
+        </button>
+        <button
+          className={`tab-btn ${statusFilter === 'progress' ? 'active' : ''}`}
+          onClick={() => setStatusFilter('progress')}
+        >
+          W realizacji ({inProgressCount})
+        </button>
+        <button
+          className={`tab-btn ${statusFilter === 'resolved' ? 'active' : ''}`}
+          onClick={() => setStatusFilter('resolved')}
+        >
+          Rozwiązane ({resolvedCount})
+        </button>
       </div>
 
-      {/* Tickets List */}
-      <section className="panel" style={{ padding: '0', overflow: 'hidden' }}>
-        <div style={{ padding: '18px 24px', borderBottom: '1px solid #edf1f5', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3 style={{ margin: 0, fontSize: '15px' }}>Lista zgłoszeń serwisowych</h3>
-          <button
-            onClick={loadTickets}
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: '#126dad', cursor: 'pointer', fontSize: '11px', fontWeight: 600 }}
-          >
-            <Icon name="refresh" size={14} /> Odśwież
-          </button>
+      {/* Ticket Table */}
+      <section className="panel">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">REJESTR ZGŁOSZEŃ</p>
+            <h3>Lista awarii i stan realizacji</h3>
+          </div>
         </div>
 
-        {loading && tickets.length === 0 ? (
-          <p style={{ padding: '30px', textAlign: 'center', color: '#7a8b9f', fontSize: '12px' }}>
-            Ładowanie zgłoszeń...
-          </p>
-        ) : tickets.length === 0 ? (
-          <div style={{ padding: '40px 20px', textAlign: 'center' }}>
-            <p style={{ color: '#7a8b9f', fontSize: '13px' }}>Brak zarejestrowanych zgłoszeń.</p>
-            <button
-              className="primary-button"
-              style={{ margin: '14px auto 0' }}
-              onClick={() => setIsModalOpen(true)}
-            >
-              Utwórz pierwsze zgłoszenie
-            </button>
+        {loading ? (
+          <p style={{ color: '#8291a2', fontSize: '13px', padding: '20px 0' }}>Ładowanie usterek...</p>
+        ) : filteredTickets.length === 0 ? (
+          <div style={{ padding: '30px 0', textAlign: 'center', color: '#7a8b9f', fontSize: '12px' }}>
+            <p>Brak zgłoszeń w wybranej kategorii.</p>
           </div>
         ) : (
           <div className="table-responsive">
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>STATUS</th>
+                  <th>NR SPRAWY</th>
+                  <th>POKÓJ / MIEJSCE</th>
                   <th>TYTUŁ I OPIS</th>
                   <th>KATEGORIA</th>
-                  <th>POKÓJ</th>
                   <th>PRIORYTET</th>
-                  <th>DATA</th>
-                  {user.role === 'Admin' && <th>AKCJA</th>}
+                  <th>STATUS</th>
+                  <th>ZGŁOSZONO</th>
+                  {isAdmin && <th>AKCJA ZARZĄDCY</th>}
                 </tr>
               </thead>
               <tbody>
-                {tickets.map((t) => (
+                {filteredTickets.map((t) => (
                   <tr key={t.id}>
                     <td>
-                      <span className={`tag ${getStatusClass(t.status)}`}>{t.status}</span>
-                    </td>
-                    <td style={{ maxWidth: '320px' }}>
-                      <strong style={{ display: 'block', fontSize: '12px', color: '#14243a' }}>
-                        {t.title}
+                      <strong style={{ fontSize: '12px', color: '#64748b' }}>
+                        {t.ticketNumber || `#0${t.id}`}
                       </strong>
-                      <p style={{ margin: '3px 0 0', fontSize: '11px', color: '#64748b', lineHeight: 1.35 }}>
+                    </td>
+                    <td>
+                      <strong style={{ fontSize: '12px' }}>Pokój {t.roomNumber}</strong>
+                      <span style={{ display: 'block', fontSize: '9px', color: '#64748b' }}>
+                        {t.author}
+                      </span>
+                    </td>
+                    <td>
+                      <strong style={{ fontSize: '12px' }}>{t.title}</strong>
+                      <p style={{ margin: '4px 0 0', fontSize: '10px', color: '#64748b', maxWidth: '300px' }}>
                         {t.description}
                       </p>
                       {t.adminResponse && (
                         <div className="admin-response-box">
-                          <strong>Odpowiedź administracji:</strong> {t.adminResponse}
+                          <strong>Odpowiedź technika:</strong> {t.adminResponse}
                         </div>
                       )}
                     </td>
@@ -204,17 +280,19 @@ export function MaintenancePage({ user }: MaintenancePageProps) {
                       <span className="category-chip">{t.category}</span>
                     </td>
                     <td>
-                      <span style={{ fontWeight: 600, fontSize: '12px' }}>{t.roomNumber}</span>
-                    </td>
-                    <td>
                       <span className={`priority-indicator ${getPriorityClass(t.priority)}`}>
                         ● {t.priority}
                       </span>
                     </td>
-                    <td style={{ fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap' }}>
-                      {new Date(t.createdAt).toLocaleDateString('pl-PL')}
+                    <td>
+                      <span className={`tag ${getStatusClass(t.status)}`}>{t.status}</span>
                     </td>
-                    {user.role === 'Admin' && (
+                    <td>
+                      <span style={{ fontSize: '10px', color: '#64748b' }}>
+                        {t.createdAt ? new Date(t.createdAt).toLocaleDateString('pl-PL') : 'Dzisiaj'}
+                      </span>
+                    </td>
+                    {isAdmin && (
                       <td>
                         <button
                           className="action-btn-small"
@@ -236,47 +314,49 @@ export function MaintenancePage({ user }: MaintenancePageProps) {
         )}
       </section>
 
-      {/* Modal Nowe Zgłoszenie */}
+      {/* Modal Zgłoszenia Usterki */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Zgłoś nową usterkę">
         <form onSubmit={handleSubmitTicket} className="modal-form">
           <div className="form-group">
-            <label>Kategoria problemu</label>
-            <select value={category} onChange={(e) => setCategory(e.target.value)}>
-              <option value="Hydraulika">Hydraulika (cieknący kran, odpływ, toaleta)</option>
-              <option value="Elektryka">Elektryka (oświetlenie, gniazdko, bezpiecznik)</option>
-              <option value="Meble">Meble / Stolarka (szafa, zamek w drzwiach, rolety, okno)</option>
-              <option value="Internet / Sieć">Internet / Sieć przewodowa i Wi-Fi</option>
-              <option value="Sprzęt AGD">Sprzęt AGD (lodówka, kuchenka, mikrofalówka)</option>
-              <option value="Inne">Inne usterki</option>
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label>Priorytet zgłoszenia</label>
-            <select value={priority} onChange={(e) => setPriority(e.target.value)}>
-              <option value="Niski">Niski (drobna usterka, nie przeszkadza w codziennym życiu)</option>
-              <option value="Średni">Średni (wymaga naprawy w standardowym terminie)</option>
-              <option value="Wysoki">Wysoki (znaczne utrudnienie w korzystaniu z pokoju)</option>
-              <option value="Pilny">Pilny / Awaria (zalanie, zwarcie, brak prądu/ogrzewania)</option>
-            </select>
-          </div>
-
-          <div className="form-group">
-            <label>Tytuł usterki</label>
+            <label>Krótki tytuł problemu</label>
             <input
               type="text"
-              placeholder="np. Nieszczelny kran w łazience"
+              placeholder="np. Brak ciepłej wody w łazience"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
             />
           </div>
 
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div className="form-group">
+              <label>Kategoria usterki</label>
+              <select value={category} onChange={(e) => setCategory(e.target.value)}>
+                <option value="Hydraulika">Hydraulika / Woda</option>
+                <option value="Elektryka">Elektryka / Oświetlenie</option>
+                <option value="Meble">Meble / Wyposażenie</option>
+                <option value="Stolarka">Stolarka drzwiowa i okienna</option>
+                <option value="Internet">Internet / Sieć LAN</option>
+                <option value="Inne">Inne zgłoszenie</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label>Priorytet naprawy</label>
+              <select value={priority} onChange={(e) => setPriority(e.target.value)}>
+                <option value="Niski">Niski (standardowy przegląd)</option>
+                <option value="Średni">Średni (zalecana naprawa)</option>
+                <option value="Wysoki">Wysoki (utrudnia funkcjonowanie)</option>
+                <option value="Pilny">Pilny (awaria, zagrożenie zalaniem)</option>
+              </select>
+            </div>
+          </div>
+
           <div className="form-group">
-            <label>Dokładny opis usterki</label>
+            <label>Szczegółowy opis problemu</label>
             <textarea
               rows={4}
-              placeholder="Opisz dokładnie na czym polega problem oraz kiedy wystąpił..."
+              placeholder="Opisz dokładnie, co nie działa i kiedy usterka wystąpiła..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               required
@@ -284,7 +364,12 @@ export function MaintenancePage({ user }: MaintenancePageProps) {
           </div>
 
           <div className="form-actions">
-            <button type="button" className="secondary-button" onClick={() => setIsModalOpen(false)}>
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={() => setIsModalOpen(false)}
+              disabled={submitting}
+            >
               Anuluj
             </button>
             <button type="submit" className="primary-button" disabled={submitting}>
@@ -295,42 +380,55 @@ export function MaintenancePage({ user }: MaintenancePageProps) {
       </Modal>
 
       {/* Modal Zarządzanie Usterką (Admin) */}
-      <Modal
-        isOpen={!!selectedTicket}
-        onClose={() => setSelectedTicket(null)}
-        title={`Zarządzanie zgłoszeniem #${selectedTicket?.id}`}
-      >
-        <form onSubmit={handleUpdateStatus} className="modal-form">
-          <div className="form-group">
-            <label>Zmiana statusu</label>
-            <select value={adminStatus} onChange={(e) => setAdminStatus(e.target.value)}>
-              <option value="Nowe">Nowe</option>
-              <option value="W trakcie">W trakcie realizacji</option>
-              <option value="Rozwiązane">Rozwiązane / Naprawione</option>
-              <option value="Odrzucone">Odrzucone</option>
-            </select>
-          </div>
+      {selectedTicket && (
+        <Modal
+          isOpen={!!selectedTicket}
+          onClose={() => setSelectedTicket(null)}
+          title={`Zarządzanie usterką: ${selectedTicket.ticketNumber || `#0${selectedTicket.id}`}`}
+        >
+          <form onSubmit={handleUpdateStatus} className="modal-form">
+            <div>
+              <strong style={{ fontSize: '13px' }}>{selectedTicket.title}</strong>
+              <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#64748b' }}>
+                Pokój {selectedTicket.roomNumber} · Zgłaszający: {selectedTicket.author}
+              </p>
+            </div>
 
-          <div className="form-group">
-            <label>Komentarz / Odpowiedź dla mieszkańca</label>
-            <textarea
-              rows={3}
-              placeholder="np. Część zamówiona, konserwator naprawi jutro o 10:00."
-              value={adminResponse}
-              onChange={(e) => setAdminResponse(e.target.value)}
-            />
-          </div>
+            <div className="form-group">
+              <label>Zmień status zgłoszenia</label>
+              <select value={adminStatus} onChange={(e) => setAdminStatus(e.target.value)}>
+                <option value="Nowe">Nowe (w kolejce)</option>
+                <option value="W trakcie">W trakcie (przydzielono konserwatorowi)</option>
+                <option value="Rozwiązane">Rozwiązane (naprawa wykonana)</option>
+                <option value="Odrzucone">Odrzucone (poza zakresem akademika)</option>
+              </select>
+            </div>
 
-          <div className="form-actions">
-            <button type="button" className="secondary-button" onClick={() => setSelectedTicket(null)}>
-              Zamknij
-            </button>
-            <button type="submit" className="primary-button">
-              Zapisz zmiany
-            </button>
-          </div>
-        </form>
-      </Modal>
+            <div className="form-group">
+              <label>Odpowiedź / notatka dla mieszkańca</label>
+              <textarea
+                rows={3}
+                placeholder="np. Konserwator dokonał wymiany zaworu. Sprawa zamknięta."
+                value={adminResponse}
+                onChange={(e) => setAdminResponse(e.target.value)}
+              />
+            </div>
+
+            <div className="form-actions">
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => setSelectedTicket(null)}
+              >
+                Anuluj
+              </button>
+              <button type="submit" className="primary-button">
+                Zapisz zmiany
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </main>
   );
 }
