@@ -1,0 +1,69 @@
+@startuml Diagram_Komponentow_AkaNet
+!theme plain
+skinparam componentStyle uml2
+skinparam shadowing false
+skinparam roundCorner 8
+skinparam defaultFontName "Segoe UI", Arial, sans-serif
+
+skinparam package {
+  BackgroundColor #F8FAFC
+  BorderColor #64748B
+  FontColor #1E293B
+  FontStyle bold
+}
+
+skinparam component {
+  BackgroundColor #F1F5F9
+  BorderColor #2563EB
+  FontColor #0F172A
+}
+
+skinparam interface {
+  BackgroundColor #FFFFFF
+  BorderColor #EA580C
+  FontColor #C2410C
+}
+
+skinparam database {
+  BackgroundColor #EFF6FF
+  BorderColor #1D4ED8
+  FontColor #1E3A8A
+}
+
+skinparam arrow {
+  Color #334155
+  FontColor #475569
+}
+
+package "Warstwa Prezentacji (Frontend SPA - React 19 / Vite)" as PkgFrontend {
+  [Moduł Interfejsu Mieszkańca\n(Dashboard, Pokoje, Rezerwacje)] as UI_Resident
+  [Moduł Zarządcy i Administracji\n(Ewidencja, Kreator Ogłoszeń, Raporty)] as UI_Admin
+  [Klient Komunikacji API\n(api.ts / Axios Client)] as API_Client
+
+  UI_Resident ..> API_Client : <<use>>
+  UI_Admin ..> API_Client : <<use>>
+}
+
+interface "REST API (HTTPS / JSON + JWT)" as I_REST
+
+package "Warstwa Serwerowa (Backend - .NET 10 Web API)" as PkgBackend {
+  [Kontrolery REST API\n(AuthController, RoomsController,\nMaintenanceController, etc.)] as Controllers
+  [Moduł Bezpieczeństwa i Tokenów\n(JwtService)] as AuthService
+  [Warstwa Mapowania Obiektowego\n(AkaNetDbContext / EF Core 10)] as DataAccess
+
+  Controllers -up- I_REST : udostępnia
+  Controllers ..> AuthService : <<use>>
+  Controllers ..> DataAccess : <<use>>
+}
+
+interface "Npgsql Driver (TCP 5432)" as I_DB
+
+package "Warstwa Danych (PostgreSQL Database)" as PkgDB {
+  database "PostgreSQL 16\n(Baza Relacyjna)" as DB
+  DB -up- I_DB : udostępnia
+}
+
+API_Client ..( I_REST : <<call>>
+DataAccess ..( I_DB : <<query>>
+
+@enduml
