@@ -1,0 +1,69 @@
+@startuml Diagram_DFD_Poziom_1_Zarzadca
+!theme plain
+left to right direction
+skinparam shadowing false
+skinparam roundCorner 8
+skinparam defaultFontName "Segoe UI", Arial, sans-serif
+
+skinparam rectangle {
+  BackgroundColor #0F172A
+  BorderColor #1E293B
+  FontColor #FFFFFF
+  FontStyle bold
+}
+
+skinparam usecase {
+  BackgroundColor #15803D
+  BorderColor #166534
+  FontColor #FFFFFF
+  FontStyle bold
+}
+
+skinparam database {
+  BackgroundColor #FEF3C7
+  BorderColor #D97706
+  FontColor #92400E
+  FontStyle bold
+}
+
+skinparam arrow {
+  Color #166534
+  FontColor #0F172A
+  FontSize 10
+}
+
+rectangle "🏛️ Zarządca / Administrator" as ADMIN
+
+together {
+  usecase "4.0\nKwalifikacja\nUsterek" as P4A
+  usecase "5.0\nRozpatrywanie\nPodań" as P5A
+  usecase "6.0\nKreator\nOgłoszeń" as P6A
+  usecase "7.0\nDashboard KPI\ni Raporty" as P7A
+}
+
+together {
+  database "D4: Usterki\n(MaintenanceTickets)" as D4
+  database "D5: Podania\n(ApplicationRequests)" as D5
+  database "D6: Ogłoszenia\n(Announcements)" as D6
+  database "D1, D2, D3:\nBaza Statystyk" as D_STATS
+}
+
+ADMIN --> P4A : Status naprawy + odpowiedź
+P4A <--> D4 : Aktualizacja zgłoszenia
+P4A --> ADMIN : Kolejka spraw
+
+ADMIN --> P5A : Decyzja + uzasadnienie
+P5A <--> D5 : Zatwierdzenie / odmowa
+P5A --> ADMIN : Lista oczekujących wniosków
+
+ADMIN --> P6A : Treść, priorytet, target
+P6A <--> D6 : Publikacja / usunięcie
+P6A --> ADMIN : Podgląd tablicy ogłoszeń
+
+ADMIN --> P7A : Żądanie eksportu
+D_STATS ..> P7A : Agregacja wskaźników
+D4 ..> P7A : Zestawienie awarii
+P7A --> ADMIN : Statystyki live (obłożenie 86%)
+P7A --> ADMIN : Plik Raport_Usterek.csv
+
+@enduml

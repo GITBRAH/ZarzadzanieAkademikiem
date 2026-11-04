@@ -1,0 +1,133 @@
+@startuml Diagram_Przeplywu_Danych_DFD_AkaNet
+!theme plain
+left to right direction
+skinparam shadowing false
+skinparam roundCorner 8
+skinparam defaultFontName "Segoe UI", Arial, sans-serif
+
+' Paleta barw AkaNet v2
+skinparam package {
+  BackgroundColor #F8FAFC
+  BorderColor #64748B
+  FontColor #0F172A
+  FontStyle bold
+}
+
+skinparam rectangle {
+  BackgroundColor #0F172A
+  BorderColor #1E293B
+  FontColor #FFFFFF
+  FontStyle bold
+}
+
+skinparam usecase {
+  BackgroundColor #1D4ED8
+  BorderColor #1E40AF
+  FontColor #FFFFFF
+  FontStyle bold
+}
+
+skinparam database {
+  BackgroundColor #FEF3C7
+  BorderColor #D97706
+  FontColor #92400E
+  FontStyle bold
+}
+
+skinparam arrow {
+  Color #2563EB
+  FontColor #0F172A
+  FontSize 10
+}
+
+' ==========================================
+' KOLUMNA 1: ENCJE ZEWNĘTRZNE
+' ==========================================
+together {
+  rectangle "👤 Gość / Nowy\n(Ekran Zero)" as E_Guest
+  rectangle "🎓 Mieszkaniec\n(Jan Makara)" as E_Resident
+  rectangle "🏛️ Zarządca\n(Administracja)" as E_Admin
+}
+
+' ==========================================
+' KOLUMNA 2: PROCESY LOGICZNE (POZIOM 1)
+' ==========================================
+together {
+  usecase "1.0\nUwierzytelnianie\ni JWT" as P1
+  usecase "2.0\nEwidencja Pokoi\ni Kwaterunku" as P2
+  usecase "3.0\nRezerwacje Pralni\ni Boisk" as P3
+  usecase "4.0\nObsługa Usterek\ni Napraw" as P4
+  usecase "5.0\nProcesowanie\nPodań" as P5
+  usecase "6.0\nDystrybucja\nOgłoszeń" as P6
+  usecase "7.0\nRaportowanie\ni KPI (CSV)" as P7
+}
+
+' ==========================================
+' KOLUMNA 3: MAGAZYNY DANYCH (POSTGRESQL)
+' ==========================================
+together {
+  database "D1: Użytkownicy\n(Users)" as D1
+  database "D2: Pokoje\n(Rooms)" as D2
+  database "D3: Obiekty i Rezerwacje\n(Reservations)" as D3
+  database "D4: Zgłoszenia Usterek\n(MaintenanceTickets)" as D4
+  database "D5: Podania i Wnioski\n(ApplicationRequests)" as D5
+  database "D6: Tablica Ogłoszeń\n(Announcements)" as D6
+}
+
+' ==========================================
+' PRZEPŁYWY DANYCH
+' ==========================================
+
+' 1.0 Auth
+E_Guest --> P1 : Rejestracja
+E_Resident --> P1 : Logowanie (Email, Hasło)
+E_Admin --> P1 : Logowanie admina
+P1 <--> D1 : Weryfikacja hasła BCrypt
+P1 --> E_Resident : Token JWT + Profil
+P1 --> E_Admin : Token JWT + Uprawnienia
+
+' 2.0 Pokoje
+E_Resident --> P2 : Zapytanie o pokój
+E_Admin --> P2 : Filtry studenta/pokoju
+D2 --> P2 : Parametry pokoju
+D1 ..> P2 : Współlokatorzy
+P2 --> E_Resident : Dane pokoju B-214
+P2 --> E_Admin : Kartoteka pokoi
+
+' 3.0 Rezerwacje
+E_Resident --> P3 : Data, slot, obiekt
+P3 <--> D3 : Weryfikacja i zapis
+P3 --> E_Resident : Harmonogram i bilet
+
+' 4.0 Usterki
+E_Resident --> P4 : Formularz usterki
+D2 ..> P4 : Numer pokoju B-214
+P4 <--> D4 : Zapis zgłoszenia
+E_Admin --> P4 : Status + Odpowiedź
+P4 --> E_Resident : Nr sprawy #0148
+P4 --> E_Admin : Kolejka zgłoszeń
+
+' 5.0 Podania
+E_Resident --> P5 : Wniosek o pokój/gościa
+P5 <--> D5 : Rejestracja / Odczyt
+E_Admin --> P5 : Decyzja + Uzasadnienie
+P5 --> E_Resident : Wynik petycji
+P5 --> E_Admin : Lista do decyzji
+
+' 6.0 Ogłoszenia
+E_Admin --> P6 : Publikacja / Usunięcie
+P6 <--> D6 : Zapis / Odczyt ogłoszeń
+P6 --> E_Resident : Komunikaty i alerty
+P6 --> E_Admin : Wgląd w tablicę
+
+' 7.0 Raporty
+D1 ..> P7 : Lokatorzy (412)
+D2 ..> P7 : Obłożenie (86%)
+D4 ..> P7 : Usterki (14)
+D3 ..> P7 : Rezerwacje (38)
+D5 ..> P7 : Podania (27)
+E_Admin --> P7 : Żądanie raportu
+P7 --> E_Admin : Dashboard KPI
+P7 --> E_Admin : Plik Raport_Usterek.csv
+
+@enduml
