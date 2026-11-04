@@ -60,12 +60,14 @@ flowchart TD
 
 ### 2.1. Główny Diagram Poziomu 1 (Pełny, Kolumnowy)
 
+![2.1 Główny Diagram DFD Poziomu 1 (Gane-Sarson)](DFD/2.1_DFD_Poziom_1_Glowny.png)
+
 ```mermaid
 flowchart LR
     %% Style elementów
-    classDef entity fill:#0F172A,stroke:#334155,stroke-width:2px,color:#FFFFFF,font-weight:bold;
-    classDef proc fill:#1D4ED8,stroke:#1E40AF,stroke-width:2px,color:#FFFFFF,font-weight:bold;
-    classDef store fill:#FEF3C7,stroke:#D97706,stroke-width:2px,color:#92400E,font-weight:bold;
+    classDef entity fill:#FDEAA8,stroke:#111111,stroke-width:1.6px,color:#000000,font-weight:bold;
+    classDef proc fill:#FDEAA8,stroke:#111111,stroke-width:1.6px,color:#000000,font-weight:bold;
+    classDef store fill:#FDEAA8,stroke:#111111,stroke-width:1.6px,color:#000000,font-weight:bold;
 
     %% 1. ENCJE ZEWNĘTRZNE
     subgraph ENCJE ["1. Encje Zewnętrzne (Terminatory)"]
@@ -170,11 +172,13 @@ W pracach inżynierskich i sprawozdaniach projektowych zaleca się dodatkowo prz
 #### Widok 2.2A: Podsystem Mieszkańca i Zasobów Wspólnych (Student View)
 Obejmuje procesy dostępne dla studenta: logowanie, wgląd w pokój, rezerwacje pralni/boisk oraz zgłaszanie awarii.
 
+![2.2A Podsystem Mieszkańca i Zasobów Wspólnych](DFD/2.2A_DFD_Poziom_1_Mieszkaniec.png)
+
 ```mermaid
 flowchart LR
-    classDef entity fill:#0F172A,stroke:#334155,stroke-width:2px,color:#FFFFFF,font-weight:bold;
-    classDef proc fill:#0369A1,stroke:#0284C7,stroke-width:2px,color:#FFFFFF,font-weight:bold;
-    classDef store fill:#FEF3C7,stroke:#D97706,stroke-width:2px,color:#92400E,font-weight:bold;
+    classDef entity fill:#FDEAA8,stroke:#111111,stroke-width:1.6px,color:#000000,font-weight:bold;
+    classDef proc fill:#FDEAA8,stroke:#111111,stroke-width:1.6px,color:#000000,font-weight:bold;
+    classDef store fill:#FDEAA8,stroke:#111111,stroke-width:1.6px,color:#000000,font-weight:bold;
 
     STUDENT["🎓 Mieszkaniec (Jan Makara)"]:::entity
 
@@ -218,11 +222,13 @@ flowchart LR
 #### Widok 2.2B: Podsystem Zarządcy, Administracji i Analityki (Admin View)
 Obejmuje centrum operacyjne zarządcy: procesowanie podań, serwis napraw, publikację komunikatów oraz generowanie raportów CSV.
 
+![2.2B Podsystem Zarządcy, Administracji i Analityki](DFD/2.2B_DFD_Poziom_1_Zarzadca.png)
+
 ```mermaid
 flowchart LR
-    classDef entity fill:#0F172A,stroke:#334155,stroke-width:2px,color:#FFFFFF,font-weight:bold;
-    classDef proc fill:#15803D,stroke:#166534,stroke-width:2px,color:#FFFFFF,font-weight:bold;
-    classDef store fill:#FEF3C7,stroke:#D97706,stroke-width:2px,color:#92400E,font-weight:bold;
+    classDef entity fill:#FDEAA8,stroke:#111111,stroke-width:1.6px,color:#000000,font-weight:bold;
+    classDef proc fill:#FDEAA8,stroke:#111111,stroke-width:1.6px,color:#000000,font-weight:bold;
+    classDef store fill:#FDEAA8,stroke:#111111,stroke-width:1.6px,color:#000000,font-weight:bold;
 
     ADMIN["🏛️ Zarządca / Administrator"]:::entity
 

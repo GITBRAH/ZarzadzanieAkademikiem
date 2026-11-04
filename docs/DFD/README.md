@@ -1,221 +1,110 @@
 # Diagramy Przepływu Danych (DFD Poziom 1) – AkaNet v2
 
-W tym katalogu znajdują się diagramy przepływu danych (**DFD Poziom 1**) opracowane w oparciu o architekturę systemu **AkaNet v2**.
-
-Zastosowano architekturę **3-Tier (`flowchart LR`)** eliminującą przecinanie się linii ("spaghetti diagram"):
-- **Kolumna 1 (Lewa):** Encje Zewnętrzne (Terminatory / Użytkownicy)
-- **Kolumna 2 (Środek):** Procesy Biznesowe
-- **Kolumna 3 (Prawa):** Relacyjne Magazyny Danych (PostgreSQL)
+Diagramy przepływu danych (**DFD Poziom 1**) zgodne ze ścisłą notacją **Gane-Sarson / Yourdon-DeMarco**, odzwierciedlające wygląd wzorcowego diagramu inżynierskiego ([`DFD.png`](../DFD.png)):
+- **Procesy:** Zaokrąglone żółte bloki z górnym paskiem nagłówka i numerem procesu w lewym rogu (`1.0`, `2.0`...).
+- **Magazyny Danych:** Bloki z szarym separatorem identyfikatora (`D1`–`D6`) i żółtą sekcją nazwy tabeli bazy PostgreSQL.
+- **Encje Zewnętrzne:** Klasyczne żółte prostokąty z wyraźną czarną ramką.
+- **Przepływy:** Prostopadłe (ortogonalne) linie ze strzałkami i czytelnymi etykietami.
 
 ---
 
 ## Spis Diagramów
 
-1. [2.1 Główny Diagram DFD Poziomu 1 (Pełny, Kolumnowy)](#21-główny-diagram-poziomu-1-pełny-kolumnowy) – pliki: [`2.1_DFD_Poziom_1_Glowny.md`](2.1_DFD_Poziom_1_Glowny.md), [`2.1_DFD_Poziom_1_Glowny.puml`](2.1_DFD_Poziom_1_Glowny.puml)
-2. [2.2A Podsystem Mieszkańca i Zasobów Wspólnych](#22a-podsystem-mieszkańca-i-zasobów-wspólnych-student-view) – pliki: [`2.2A_DFD_Poziom_1_Mieszkaniec.md`](2.2A_DFD_Poziom_1_Mieszkaniec.md), [`2.2A_DFD_Poziom_1_Mieszkaniec.puml`](2.2A_DFD_Poziom_1_Mieszkaniec.puml)
-3. [2.2B Podsystem Zarządcy, Administracji i Analityki](#22b-podsystem-zarządcy-administracji-i-analityki-admin-view) – pliki: [`2.2B_DFD_Poziom_1_Zarzadca.md`](2.2B_DFD_Poziom_1_Zarzadca.md), [`2.2B_DFD_Poziom_1_Zarzadca.puml`](2.2B_DFD_Poziom_1_Zarzadca.puml)
+1. [2.1 Główny Diagram DFD Poziomu 1 (Pełny)](#21-główny-diagram-poziomu-1-pełny) – plik graficzny: [`2.1_DFD_Poziom_1_Glowny.png`](2.1_DFD_Poziom_1_Glowny.png)
+2. [2.2A Podsystem Mieszkańca i Zasobów Wspólnych](#22a-podsystem-mieszkańca-i-zasobów-wspólnych-student-view) – plik graficzny: [`2.2A_DFD_Poziom_1_Mieszkaniec.png`](2.2A_DFD_Poziom_1_Mieszkaniec.png)
+3. [2.2B Podsystem Zarządcy, Administracji i Analityki](#22b-podsystem-zarządcy-administracji-i-analityki-admin-view) – plik graficzny: [`2.2B_DFD_Poziom_1_Zarzadca.png`](2.2B_DFD_Poziom_1_Zarzadca.png)
 
 ---
 
-## 2.1 Główny Diagram Poziomu 1 (Pełny, Kolumnowy)
+## 2.1 Główny Diagram Poziomu 1 (Pełny)
 
-Prezentuje pełny system: wszystkich aktorów, wszystkie 7 procesów oraz 6 magazynów bazy danych.
+![2.1 Główny Diagram DFD Poziomu 1](2.1_DFD_Poziom_1_Glowny.png)
 
+### Kod Mermaid (do edycji online / podglądu tekstowego)
 ```mermaid
 flowchart LR
-    %% Style elementów
-    classDef entity fill:#0F172A,stroke:#334155,stroke-width:2px,color:#FFFFFF,font-weight:bold;
-    classDef proc fill:#1D4ED8,stroke:#1E40AF,stroke-width:2px,color:#FFFFFF,font-weight:bold;
-    classDef store fill:#FEF3C7,stroke:#D97706,stroke-width:2px,color:#92400E,font-weight:bold;
+    classDef entity fill:#FDEAA8,stroke:#111111,stroke-width:1.6px,color:#000000,font-weight:bold;
+    classDef proc fill:#FDEAA8,stroke:#111111,stroke-width:1.6px,color:#000000,font-weight:bold;
+    classDef store fill:#FDEAA8,stroke:#111111,stroke-width:1.6px,color:#000000,font-weight:bold;
 
-    %% 1. ENCJE ZEWNĘTRZNE
-    subgraph ENCJE ["1. Encje Zewnętrzne"]
+    subgraph ENCJE ["Encje Zewnętrzne"]
         direction TB
-        GUEST["👤 Gość / Nowy"]:::entity
-        STUDENT["🎓 Mieszkaniec (Jan Makara)"]:::entity
-        ADMIN["🏛️ Zarządca / Technik"]:::entity
+        GUEST["Gość / Nowy\n(Ekran Zero)"]:::entity
+        STUDENT["Mieszkaniec\n(Jan Makara)"]:::entity
+        ADMIN["Zarządca /\nAdministrator"]:::entity
     end
 
-    %% 2. PROCESY PRZETWARZANIA
-    subgraph PROCESY ["2. Procesy Logiczne (Poziom 1)"]
+    subgraph PROCESY ["Procesy Logiczne (Poziom 1)"]
         direction TB
-        subgraph MOD_AUTH ["Moduł Tożsamości i Kwaterunku"]
-            direction TB
-            P1(["1.0 Uwierzytelnianie i JWT"]):::proc
-            P2(["2.0 Ewidencja Kwaterunku i Pokoi"]):::proc
-        end
-        subgraph MOD_OPS ["Moduł Zasobów i Serwisu"]
-            direction TB
-            P3(["3.0 Rezerwacje Pralni i Boisk"]):::proc
-            P4(["4.0 Obsługa Zgłoszeń i Usterek"]):::proc
-        end
-        subgraph MOD_ADM ["Moduł Administracyjny i Analityki"]
-            direction TB
-            P5(["5.0 Procesowanie Podań"]):::proc
-            P6(["6.0 Dystrybucja Ogłoszeń"]):::proc
-            P7(["7.0 Raportowanie i KPI"]):::proc
-        end
+        P1(["1.0 | Uwierzytelnianie i JWT"]):::proc
+        P2(["2.0 | Ewidencja Kwaterunku"]):::proc
+        P3(["3.0 | Rezerwacje Obiektów"]):::proc
+        P4(["4.0 | Obsługa Usterek i Napraw"]):::proc
+        P5(["5.0 | Procesowanie Podań"]):::proc
+        P6(["6.0 | Dystrybucja Ogłoszeń"]):::proc
+        P7(["7.0 | Raportowanie i KPI (CSV)"]):::proc
     end
 
-    %% 3. MAGAZYNY DANYCH
-    subgraph BAZA ["3. Magazyny Danych (PostgreSQL 16)"]
+    subgraph BAZA ["Magazyny Danych (PostgreSQL)"]
         direction TB
-        D1[("D1: Użytkownicy i Konta")]:::store
-        D2[("D2: Kwaterunek i Pokoje")]:::store
-        D3[("D3: Obiekty i Rezerwacje")]:::store
-        D4[("D4: Zgłoszenia Usterek")]:::store
-        D5[("D5: Wnioski i Podania")]:::store
-        D6[("D6: Tablica Ogłoszeń")]:::store
+        D1[("D1 | Użytkownicy i Konta")]:::store
+        D2[("D2 | Kwaterunek i Pokoje")]:::store
+        D3[("D3 | Obiekty i Rezerwacje")]:::store
+        D4[("D4 | Zgłoszenia Usterek")]:::store
+        D5[("D5 | Wnioski i Podania")]:::store
+        D6[("D6 | Tablica Ogłoszeń")]:::store
     end
 
-    %% PRZEPŁYWY DANYCH
-    %% 1.0 Auth
-    GUEST -->|Rejestracja| P1
-    STUDENT -->|Email, hasło| P1
-    ADMIN -->|Email, hasło| P1
+    GUEST -->|Formularz rejestracji| P1
+    STUDENT -->|Email, Hasło| P1
+    P1 -->|Token JWT| STUDENT
     P1 <-->|Weryfikacja BCrypt| D1
-    P1 -->|Token JWT + Profil| STUDENT
-    P1 -->|Token JWT + Rola| ADMIN
 
-    %% 2.0 Pokoje
     STUDENT -->|Zapytanie o pokój| P2
-    ADMIN -->|Filtr lokatora/pokoju| P2
-    D2 -->|Metraż, piętro, czynsz| P2
+    P2 -->|Dane pokoju B-214| STUDENT
+    D2 -->|Parametry pokoju| P2
     D1 -.->|Współlokatorzy| P2
-    P2 -->|Dane pokoju B-214 + czynsz| STUDENT
-    P2 -->|Kartoteka pokoi i studentów| ADMIN
 
-    %% 3.0 Rezerwacje
-    STUDENT -->|Slot, data, obiekt| P3
-    P3 <-->|Odczyt slotów / Zapis rezerwacji| D3
-    P3 -->|Harmonogram i potwierdzenie| STUDENT
+    STUDENT -->|Data, slot, obiekt| P3
+    P3 -->|Potwierdzenie bilet| STUDENT
+    P3 <-->|Zapis / Grafik slotów| D3
 
-    %% 4.0 Usterki
     STUDENT -->|Formularz usterki| P4
-    D2 -.->|Autoprzypisanie pokoju| P4
-    P4 <-->|Zapis usterki / Odczyt| D4
-    ADMIN -->|Status + Odpowiedź serwisu| P4
-    P4 -->|Nr sprawy #0148 + status| STUDENT
-    P4 -->|Kolejka awarii| ADMIN
+    P4 -->|Nr sprawy #0148| STUDENT
+    P4 <-->|Zapis / Historia usterek| D4
+    ADMIN -->|Status + Odpowiedź| P4
 
-    %% 5.0 Podania
     STUDENT -->|Wniosek o pokój/gościa| P5
-    P5 <-->|Zapis wniosku / Odczyt| D5
-    ADMIN -->|Decyzja i uzasadnienie| P5
-    P5 -->|Status petycji| STUDENT
-    P5 -->|Kolejka podań| ADMIN
+    P5 -->|Wynik rozpatrzenia| STUDENT
+    ADMIN -->|Decyzja zarządcy| P5
+    P5 <-->|Zapis / Lista wniosków| D5
 
-    %% 6.0 Ogłoszenia
     ADMIN -->|Nowe ogłoszenie / Usuń| P6
-    P6 <-->|Zapis / Odczyt ogłoszeń| D6
-    P6 -->|Alerty i biuletyn| STUDENT
-    P6 -->|Lista komunikatów| ADMIN
+    P6 <-->|Zapis / Lista ogłoszeń| D6
+    P6 -->|Tablica ogłoszeń i alerty| STUDENT
 
-    %% 7.0 Raporty
-    D1 -.->|Lokatorzy (412)| P7
-    D2 -.->|Obłożenie (86%)| P7
-    D4 -.->|Usterki (14)| P7
-    D3 -.->|Rezerwacje (38)| P7
-    D5 -.->|Podania (27)| P7
     ADMIN -->|Żądanie eksportu CSV| P7
-    P7 -->|Pulpit KPI na żywo| ADMIN
     P7 -->|Plik Raport_Usterek.csv| ADMIN
+    D2 -.->|Obłożenie 86%| P7
+    D4 -.->|Otwarte awarie 14| P7
 ```
 
 ---
 
 ## 2.2A Podsystem Mieszkańca i Zasobów Wspólnych (Student View)
 
-Diagram dedykowany do prezentacji ścieżki studenta: uwierzytelnianie, karta pokoju, harmonogram pralni/boisk, rejestracja usterek.
+Dedykowany widok ścieżki studenta – kwaterunek, pralnie/boiska oraz zgłoszenia napraw.
 
-```mermaid
-flowchart LR
-    classDef entity fill:#0F172A,stroke:#334155,stroke-width:2px,color:#FFFFFF,font-weight:bold;
-    classDef proc fill:#0369A1,stroke:#0284C7,stroke-width:2px,color:#FFFFFF,font-weight:bold;
-    classDef store fill:#FEF3C7,stroke:#D97706,stroke-width:2px,color:#92400E,font-weight:bold;
+![2.2A Podsystem Mieszkańca i Zasobów Wspólnych](2.2A_DFD_Poziom_1_Mieszkaniec.png)
 
-    STUDENT["🎓 Mieszkaniec (Jan Makara)"]:::entity
-
-    subgraph PROCESY_STUDENT ["Moduł Operacji Mieszkańca"]
-        direction TB
-        P1(["1.0 Uwierzytelnianie"]):::proc
-        P2(["2.0 Mój Pokój i Kwaterunek"]):::proc
-        P3(["3.0 Rezerwacje Pralni i Boisk"]):::proc
-        P4(["4.0 Zgłaszanie Usterek"]):::proc
-    end
-
-    subgraph BAZA_A ["Magazyny Danych"]
-        direction TB
-        D1[("D1: Użytkownicy")]:::store
-        D2[("D2: Pokoje")]:::store
-        D3[("D3: Rezerwacje")]:::store
-        D4[("D4: Usterki")]:::store
-    end
-
-    STUDENT -->|Poświadczenia logowania| P1
-    P1 <-->|Weryfikacja hasła| D1
-    P1 -->|Token JWT + Profil| STUDENT
-
-    STUDENT -->|Zapytanie o pokój| P2
-    D2 -->|Metraż, czynsz, kaucja| P2
-    D1 -.->|Współlokatorzy| P2
-    P2 -->|Stan pokoju B-214| STUDENT
-
-    STUDENT -->|Data, slot, obiekt| P3
-    P3 <-->|Weryfikacja kolizji i zapis| D3
-    P3 -->|Harmonogram i bilet| STUDENT
-
-    STUDENT -->|Kategoria, opis, priorytet| P4
-    D2 -.->|Numer pokoju B-214| P4
-    P4 -->|Zapis usterki 'Nowe'| D4
-    P4 -->|Numer sprawy #0148| STUDENT
-```
+Plik źródłowy PlantUML: [`2.2A_DFD_Poziom_1_Mieszkaniec.puml`](2.2A_DFD_Poziom_1_Mieszkaniec.puml)
 
 ---
 
 ## 2.2B Podsystem Zarządcy, Administracji i Analityki (Admin View)
 
-Diagram dedykowany do prezentacji centrum operacyjnego: kwalifikacja napraw, obsługa podań, tablica ogłoszeń, wskaźniki KPI i raporty CSV.
+Dedykowany widok centrum operacyjnego zarządcy – serwis techniczny, rozpatrywanie podań, tablica ogłoszeń oraz raportowanie.
 
-```mermaid
-flowchart LR
-    classDef entity fill:#0F172A,stroke:#334155,stroke-width:2px,color:#FFFFFF,font-weight:bold;
-    classDef proc fill:#15803D,stroke:#166534,stroke-width:2px,color:#FFFFFF,font-weight:bold;
-    classDef store fill:#FEF3C7,stroke:#D97706,stroke-width:2px,color:#92400E,font-weight:bold;
+![2.2B Podsystem Zarządcy, Administracji i Analityki](2.2B_DFD_Poziom_1_Zarzadca.png)
 
-    ADMIN["🏛️ Zarządca / Administrator"]:::entity
-
-    subgraph PROCESY_ADMIN ["Centrum Operacyjne Zarządcy"]
-        direction TB
-        P4A(["4.0 Kwalifikacja Usterek"]):::proc
-        P5A(["5.0 Rozpatrywanie Podań"]):::proc
-        P6A(["6.0 Kreator Ogłoszeń"]):::proc
-        P7A(["7.0 Dashboard KPI i Raporty"]):::proc
-    end
-
-    subgraph BAZA_B ["Magazyny Danych"]
-        direction TB
-        D4[("D4: Usterki")]:::store
-        D5[("D5: Podania")]:::store
-        D6[("D6: Ogłoszenia")]:::store
-        D_STATS[("D1, D2, D3: Statystyki")]:::store
-    end
-
-    ADMIN -->|Status naprawy + odpowiedź| P4A
-    P4A <-->|Aktualizacja zgłoszenia| D4
-    P4A -->|Kolejka spraw| ADMIN
-
-    ADMIN -->|Decyzja + uzasadnienie| P5A
-    P5A <-->|Zatwierdzenie / odmowa| D5
-    P5A -->|Lista oczekujących wniosków| ADMIN
-
-    ADMIN -->|Treść, priorytet, target| P6A
-    P6A <-->|Publikacja / usunięcie| D6
-    P6A -->|Podgląd tablicy ogłoszeń| ADMIN
-
-    ADMIN -->|Żądanie eksportu| P7A
-    D_STATS -.->|Agregacja wskaźników| P7A
-    D4 -.->|Zestawienie awarii| P7A
-    P7A -->|Statystyki live (obłożenie 86%)| ADMIN
-    P7A -->|Plik Raport_Usterek.csv| ADMIN
-```
+Plik źródłowy PlantUML: [`2.2B_DFD_Poziom_1_Zarzadca.puml`](2.2B_DFD_Poziom_1_Zarzadca.puml)
